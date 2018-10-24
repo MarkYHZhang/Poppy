@@ -1,61 +1,83 @@
-import clientgui.MainFrame;
-import com.github.sarxos.webcam.Webcam;
-import io.indico.Indico;
-import org.openimaj.image.ImageUtilities;
+package main;
+
+import client.MainFrame;
+import org.openimaj.image.colour.Transforms;
 import org.openimaj.image.processing.face.detection.DetectedFace;
 import org.openimaj.image.processing.face.detection.HaarCascadeDetector;
+import org.openimaj.video.capture.VideoCapture;
+import org.openimaj.video.capture.VideoCaptureException;
+import server.ClientHandler;
+import spark.Spark;
 
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import java.awt.Dimension;
-import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.List;
 
 import static spark.Spark.get;
+import static spark.Spark.init;
+import static spark.Spark.port;
 import static spark.Spark.post;
+import static spark.Spark.webSocket;
 
 
 public class Poppy {
 
     static String code;
 
+    public static final String SERVERIP = "0.0.0.0";
+    public static final short SERVER_PORT = 9001;
+    public static final String SERVER_UPDATE_CODE_URL = "http://"+SERVERIP+":"+SERVER_PORT+"/updateCode";
+    public static final String SERVER_GET_CODE_URL = "http://"+SERVERIP+":"+SERVER_PORT+"/getCode";
+    public static final String SERVER_SOCKET_URL = "ws://"+SERVERIP+":"+SERVER_PORT+"/socket";
 
-
-    private static final long serialVersionUID = 1L;
     private static final HaarCascadeDetector detector = new HaarCascadeDetector();
 
     public static void main(String[] args) {
         if(args.length==1&&args[0].equals("server")){
+
+            Spark.exception(Exception.class, (exception, request, response) -> {
+                exception.printStackTrace();
+            });
+
+
+            port(SERVER_PORT);
+
+            webSocket("/socket", server.ClientHandler.class);
+
+
             get("/getCode", (request, response) -> {
+                System.out.println("FUCK");
                 return code;
             });
 
             post("/updateCode", (request, response) -> {
-                code = compileCode(request.params("content"));
+                System.out.println("FUCK");
+                System.out.println(request.body());
+                code = compileCode(request.body());
+                System.out.println(code);
                 return "Received";
             });
+
+
+            init();
+
         }else if(args.length==1&&args[0].equals("robot")){
 
-            Indico indico = null;
-//            try {
-//                indico = new Indico("627079b9b49deba248916674bb95cd7d");
-
-                Webcam webcam = Webcam.getDefault();
-                webcam.setViewSize(new Dimension(640, 480));
-                webcam.open();
-                BufferedImage bi = webcam.getImage();
-//                ImageIO.write(bi, "PNG", new File("img.png"));
-                webcam.close();
-
+            try {
+                System.out.println("v1");
+                VideoCapture vc = new VideoCapture( 320, 240);
                 List<DetectedFace> faces = null;
-                faces = detector.detectFaces(ImageUtilities.createFImage(bi));
+                for (int i = 0; i < 10000; i++) {
+                    faces = detector.detectFaces(Transforms.calculateIntensity(vc.getNextFrame()));
+                    System.out.println(faces.get(0).getBounds());
+                }
+                vc.close();
+//                System.out.println(faces.get(1).getBounds());
+            } catch (VideoCaptureException  e) {
+                e.printStackTrace();
+            }
 
-                System.out.println(faces.get(0).getBounds());
-//                IndicoResult single = indico.facialLocalization.predict(bi);
-//                System.out.println(single.getFacialLocalization());
-//            } catch (IndicoException e) {
-//                e.printStackTrace();
-//            }
 
         }else{//client end
             try {
@@ -82,26 +104,24 @@ public class Poppy {
         turnLeft()
         turnRight()
 
-        A turn(angle from 0 to 360 with north being 0, and west being 90)
-        B move(1 forward or -1 backwards, dist in rev)
-        C activateAssistant()
-        D moveToPerson() call python to move to person
-        E say(words here) //call microsoft API then send the download URL link of the wav sound
-
-
+        turn turn(angle from 0 to 360 with north being 0, and west being 90)
+        move move(1 forward or -1 backwards, dist in rev)
+        assistant activateAssistant()
+        person moveToPerson() call python to move to person
+        say say(words here) //call microsoft API then send the download URL link of the wav sound
 
         setStepDist(in revolutions)
-
-        setSafeMode(true/false)
 
         loop(5,forward()+)
     */
 
     private static String compileCode(String code){
-        StringBuffer sb = new StringBuffer("");
+        StringBuffer sb = new StringBuffer();
         String[] rawCode = code.split(";");
+        System.out.println(Arrays.toString(rawCode));
         int rev = 1;
         for (String line : rawCode) {
+            line = line.trim();
             if (line.equals("turnLeft()")) line="turn(90)";
             else if (line.startsWith("turnRight()")) line="turn(270)";
             else if (line.startsWith("forward()")) line="move(0)";
@@ -116,23 +136,23 @@ public class Poppy {
             }else if(line.startsWith("move(")){
                 try {
                     int direction = Integer.parseInt(line.substring(5, line.length()-1).trim());
-                    sb.append("B"+direction+rev);
+                    sb.append("move,"+direction+","+rev);
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }
             }else if(line.startsWith("turn(")){
                 try {
                     int degree = Integer.parseInt(line.substring(5, line.length()-1).trim());
-                    sb.append("A"+degree);
+                    sb.append("turn,"+degree);
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }
-            }else if(line.startsWith("activateAssistant()")) sb.append("C");
-            else if(line.startsWith("moveToPerson()")) sb.append("D");
+            }else if(line.startsWith("activateAssistant()")) sb.append("assistant");
+            else if(line.startsWith("moveToPerson()")) sb.append("person");
             else if(line.startsWith("say(")){
                 try {
                     String words = line.substring(4, line.length()-1);
-                    sb.append("E"+words);
+                    sb.append("say,"+words);
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }

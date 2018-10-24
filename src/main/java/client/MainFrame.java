@@ -1,4 +1,4 @@
-package clientgui;
+package client;
 
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
@@ -9,7 +9,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame(){
 
-        setTitle("Poppy Client Terminal");
+        setTitle("main.Poppy Client Terminal");
 
         setSize(800,500);
 
@@ -19,15 +19,15 @@ public class MainFrame extends JFrame {
 
         TerminalPanel panel1 = new TerminalPanel();
         tabbedPane.addTab("Terminal", null, panel1,
-                "Interact with Poppy using commands");
+                "Interact with main.Poppy using commands");
 
         CodePanel panel2 = new CodePanel();
         tabbedPane.addTab("Code", null, panel2,
-                "Program Poppy to do extraordinary things!");
+                "Program main.Poppy to do extraordinary things!");
 
         ControlPanel panel3 = new ControlPanel();
         tabbedPane.addTab("Control", null, panel3,
-                "Control Poppy using keyboard");
+                "Control main.Poppy using keyboard");
 
         add(tabbedPane);
 

@@ -1,6 +1,8 @@
-package clientgui;
+package client;
 
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
+import main.Poppy;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -8,6 +10,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.io.BufferedReader;
 import java.util.Scanner;
 
 public class CodePanel extends JPanel{
@@ -27,15 +30,22 @@ public class CodePanel extends JPanel{
 
         executeButton.addActionListener(e -> {
 
-            StringBuffer sb = new StringBuffer("");
+            StringBuffer sb = new StringBuffer();
             Scanner sc = new Scanner(codeArea.getText());
             while (sc.hasNext()){
                 sb.append(sc.nextLine().trim());
                 sb.append(";");
             }
 
-            Unirest.post("serverIPHere")
-                    .queryString("content", sb.toString());
+            try {
+                System.out.println(Unirest.post(Poppy.SERVER_UPDATE_CODE_URL).body(sb.toString()).asString());
+            } catch (UnirestException ex) {
+                ex.printStackTrace();
+            }
+
+            System.out.println(Poppy.SERVER_GET_CODE_URL);
+
+            System.out.println(Unirest.get(Poppy.SERVER_GET_CODE_URL).getBody());;
         });
     }
 }
