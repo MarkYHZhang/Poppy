@@ -34,18 +34,25 @@ public class ClientHandler {
         }
         //turn and move
         if(message.startsWith("cmd ")){
-//            try {
+            try {
                 String cmd = message.split(" ")[1];
-                System.out.println(message);
-//                if (cmd.equals("moveForwards"))
-//                    robot.getRemote().sendString("move,1,"+revDist);
-//                else if (cmd.equals("moveBackwards"))
-//                    robot.getRemote().sendString("move,-1,"+revDist);
-//                else if(cmd.equals("turn"))
-//                    robot.getRemote().sendString("turn,"+message.split(" ")[2]);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
+                if (cmd.equals("moveForwards"))
+                    robot.getRemote().sendString("move,"+revDist);
+                else if (cmd.equals("moveBackwards"))
+                    robot.getRemote().sendString("move,"+revDist*-1);
+                else if(cmd.equals("turn"))
+                    robot.getRemote().sendString("turn,"+message.split(" ")[2]);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void sendUpdateCodeQuery(){
+        try{
+            robot.getRemote().sendString("getCode");
+        }catch (IOException e){
+            e.printStackTrace();
         }
     }
 }

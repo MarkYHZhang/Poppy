@@ -14,9 +14,7 @@ public class ClientSocket {
 
     @OnWebSocketConnect
     public void onConnect(Session user) throws Exception {
-        System.out.println("Connects!!");
         server = user;
-//        initPacket();
     }
 
     @OnWebSocketClose
@@ -49,11 +47,4 @@ public class ClientSocket {
         }
     }
 
-    private void initPacket(){
-        try {
-            server.getRemote().sendString("robotInit");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

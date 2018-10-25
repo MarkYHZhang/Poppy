@@ -32,7 +32,7 @@ public class TerminalPanel extends JPanel {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode()==KeyEvent.VK_ENTER) {
                     if (!input.getText().trim().equals("")) {
-                        terminalDisplay.append("you@main.Poppy: " + input.getText() + "\n");
+                        terminalDisplay.append("you@Poppy: " + input.getText() + "\n");
                         input.setText("");
                     }
                 }

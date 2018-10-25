@@ -1,18 +1,12 @@
 package main;
 
 import client.MainFrame;
-import org.openimaj.image.colour.Transforms;
-import org.openimaj.image.processing.face.detection.DetectedFace;
-import org.openimaj.image.processing.face.detection.HaarCascadeDetector;
-import org.openimaj.video.capture.VideoCapture;
-import org.openimaj.video.capture.VideoCaptureException;
+import robot.Robot;
 import server.ClientHandler;
 import spark.Spark;
 
 import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 import java.util.Arrays;
-import java.util.List;
 
 import static spark.Spark.get;
 import static spark.Spark.init;
@@ -25,13 +19,13 @@ public class Poppy {
 
     static String code;
 
-    public static final String SERVERIP = "0.0.0.0";
+    public static final String SERVER_IP = "0.0.0.0";
     public static final short SERVER_PORT = 9001;
-    public static final String SERVER_UPDATE_CODE_URL = "http://"+SERVERIP+":"+SERVER_PORT+"/updateCode";
-    public static final String SERVER_GET_CODE_URL = "http://"+SERVERIP+":"+SERVER_PORT+"/getCode";
-    public static final String SERVER_SOCKET_URL = "ws://"+SERVERIP+":"+SERVER_PORT+"/socket";
+    public static final String SERVER_UPDATE_CODE_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/updateCode";
+    public static final String SERVER_GET_CODE_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/getCode";
+    public static final String SERVER_SOCKET_URL = "ws://"+SERVER_IP+":"+SERVER_PORT+"/socket";
+    private static int rev = 1;
 
-    private static final HaarCascadeDetector detector = new HaarCascadeDetector();
 
     public static void main(String[] args) {
         if(args.length==1&&args[0].equals("server")){
@@ -43,52 +37,28 @@ public class Poppy {
 
             port(SERVER_PORT);
 
-            webSocket("/socket", server.ClientHandler.class);
+            ClientHandler handler = new ClientHandler();
+
+            webSocket("/socket", handler);
 
 
-            get("/getCode", (request, response) -> {
-                System.out.println("FUCK");
-                return code;
-            });
+            get("/getCode", (request, response) -> code);
 
             post("/updateCode", (request, response) -> {
-                System.out.println("FUCK");
-                System.out.println(request.body());
+                rev=1;
                 code = compileCode(request.body());
-                System.out.println(code);
+                handler.sendUpdateCodeQuery();
                 return "Received";
             });
-
 
             init();
 
         }else if(args.length==1&&args[0].equals("robot")){
-
-            try {
-                System.out.println("v1");
-                VideoCapture vc = new VideoCapture( 320, 240);
-                List<DetectedFace> faces = null;
-                for (int i = 0; i < 10000; i++) {
-                    faces = detector.detectFaces(Transforms.calculateIntensity(vc.getNextFrame()));
-                    System.out.println(faces.get(0).getBounds());
-                }
-                vc.close();
-//                System.out.println(faces.get(1).getBounds());
-            } catch (VideoCaptureException  e) {
-                e.printStackTrace();
-            }
-
-
+            new Robot();
         }else{//client end
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (UnsupportedLookAndFeelException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             new MainFrame();
@@ -118,25 +88,24 @@ public class Poppy {
     private static String compileCode(String code){
         StringBuffer sb = new StringBuffer();
         String[] rawCode = code.split(";");
-        System.out.println(Arrays.toString(rawCode));
-        int rev = 1;
         for (String line : rawCode) {
             line = line.trim();
             if (line.equals("turnLeft()")) line="turn(90)";
             else if (line.startsWith("turnRight()")) line="turn(270)";
-            else if (line.startsWith("forward()")) line="move(0)";
-            else if (line.startsWith("backward()")) line="move(1)";
+            else if (line.startsWith("forward()")) line="move(1)";
+            else if (line.startsWith("backward()")) line="move(-1)";
 
             if (line.startsWith("setStepDist(")){
                 try {
                     rev = Integer.parseInt(line.substring(12, line.length()-1).trim());
+                    continue;
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }
             }else if(line.startsWith("move(")){
                 try {
                     int direction = Integer.parseInt(line.substring(5, line.length()-1).trim());
-                    sb.append("move,"+direction+","+rev);
+                    sb.append("move,"+(direction*rev));
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }

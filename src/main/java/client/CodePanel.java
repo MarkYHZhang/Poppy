@@ -25,7 +25,6 @@ public class CodePanel extends JPanel{
 
         add(scrollPane, BorderLayout.CENTER);
 
-
         add(executeButton, BorderLayout.LINE_END);
 
         executeButton.addActionListener(e -> {
@@ -42,10 +41,6 @@ public class CodePanel extends JPanel{
             } catch (UnirestException ex) {
                 ex.printStackTrace();
             }
-
-            System.out.println(Poppy.SERVER_GET_CODE_URL);
-
-            System.out.println(Unirest.get(Poppy.SERVER_GET_CODE_URL).getBody());;
         });
     }
 }
