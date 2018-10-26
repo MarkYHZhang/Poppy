@@ -5,7 +5,7 @@ LIBS=-lm
 all: imu calib_gen
 
 calib_gen: calib_gen.c
-	$(CC) -o $@ $<
+	$(CC) -o $@ $^
 
 calib: calib_gen calib.txt
 	./calib_gen < calib.txt > calib.dat
