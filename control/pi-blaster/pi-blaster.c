@@ -52,19 +52,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "mailbox.h"
-
-// MAX_CHANNELS is both the highest gpio we can address
-// and the maximum number of channels
-#define MAX_CHANNELS 32
-
-// Create default known_pins with raspberry pi list of pins
-// to compare against the param received.
-static uint8_t known_pins[MAX_CHANNELS] = {
-	6,
-	13,
-	19,
-	26,
-};
+#include "pi-blaster.h"
 
 // Set num of possible PWM channels based on the known pins size.
 uint8_t num_channels;
@@ -240,9 +228,8 @@ static volatile uint32_t *gpio_reg;
 
 static int delay_hw = DELAY_VIA_PWM;
 
-static uint32_t channel_pwm[MAX_CHANNELS];
+uint32_t pwm[MAX_CHANNELS];
 
-static void update_pwm();
 static void fatal(char *fmt, ...);
 
 // open a char device file used for communicating with kernel mbox driver
@@ -270,6 +257,14 @@ void mbox_close(int file_desc) {
 	close(file_desc);
 }
 
+static void gpio_set_mode(uint32_t pin, uint32_t mode) {
+	uint32_t fsel = gpio_reg[GPIO_FSEL0 + pin / 10];
+
+	  fsel &= ~(7 << ((pin % 10) * 3));
+	  fsel |= mode << ((pin % 10) * 3);
+	  gpio_reg[GPIO_FSEL0 + pin/10] = fsel;
+}
+
 static void udelay(int us) {
 	struct timespec ts = { 0, us * 1000 };
 
@@ -282,8 +277,8 @@ static void terminate(int dummy) {
 	dprintf("Resetting DMA...\n");
 	if (dma_reg && mbox.virt_addr) {
 		for (i = 0; i < num_channels; i++)
-			channel_pwm[i] = 0;
-		update_pwm();
+			pwm[i] = 0;
+		pwm_update();
 		udelay(CYCLE_TIME_US);
 		dma_reg[DMA_CS] = DMA_RESET;
 		udelay(10);
@@ -394,7 +389,7 @@ static void* map_peripheral(uint32_t base, uint32_t len) {
  * We dont really need to reset the cb->dst each time but I believe it helps a lot
  * in code readability in case someone wants to generate more complex signals.
  */
-static void update_pwm() {
+void pwm_update() {
 	uint32_t phys_gpclr0 = GPIO_PHYS_BASE + 0x28;
 	uint32_t phys_gpset0 = GPIO_PHYS_BASE + 0x1c;
 	struct ctl *ctl = (struct ctl *)mbox.virt_addr;
@@ -408,7 +403,7 @@ static void update_pwm() {
 	mask = 0;
 	for (uint8_t i = 0; i < num_channels; i++) {
 		// Check the channel_map pin has been set to avoid locking all of them as PWM.
-		if (channel_pwm[i] > 0)
+		if (pwm[i] > 0)
 			mask |= 1 << channel_map[i];
 	}
 	/*	 And give that to the DMA controller to write */
@@ -420,7 +415,7 @@ static void update_pwm() {
 		mask = 0;
 		for (uint8_t i = 0; i < num_channels; i++) {
 			// Check the channel_map pin has been set to avoid locking all of them as PWM.
-			if (j >= channel_pwm[i])
+			if (j >= pwm[i])
 				mask |= 1 << channel_map[i];
 		}
 		ctl->sample[j] = mask;
@@ -438,6 +433,7 @@ static void setup_sighandlers(void) {
 		sigaction(i, &sa, NULL);
 	}
 	signal(SIGWINCH, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);
 }
 
 static void init_ctrl_data(void) {
@@ -601,11 +597,11 @@ static void debug_dump_samples() {
 	}
 }
 
-void initialize(uint8_t *channel_pins, uint8_t nchannels, int use_pcm) {
+void pwm_init(uint8_t *channel_pins, uint8_t nchannels, int use_pcm) {
 
 	num_channels = nchannels;
 
-	memset(channel_pwm, 0, sizeof(channel_pwm));
+	memset(pwm, 0, sizeof(pwm));
 	memcpy(channel_map, channel_pins, nchannels);
 	delay_hw = use_pcm;
 
@@ -656,31 +652,49 @@ void initialize(uint8_t *channel_pins, uint8_t nchannels, int use_pcm) {
 	init_ctrl_data();
 	init_hardware();
 
-	update_pwm();
+	for(int i = 0; i < nchannels; ++i) {
+		gpio_set_mode(channel_pins[i], GPIO_MODE_OUT);
+	}
+
+	pwm_update();
 }
 
-int main(int argc, char **argv) {
+/* int main(int argc, char **argv) {
 
-	uint8_t pins[] = {6, 13, 19, 26};
+	uint8_t pins[] = {12, 13, 19, 26};
 
-	initialize(pins, 4, 0);
+	init_gpio(pins, 4, 0);
 
 	while(1) {
-		channel_pwm[0] = 1000;
-		channel_pwm[1] = 0;
-		update_pwm();
+		pwm[0] = 1000;
+		pwm[1] = 0;
+		pwm_update();
 		udelay(5000);
-		channel_pwm[0] = 100;
-		update_pwm();
+		pwm[0] = 100;
+		pwm_update();
 		sleep(1);
-		channel_pwm[0] = 0;
-		channel_pwm[1] = 1000;
-		update_pwm();
+		pwm[0] = 0;
+		pwm[1] = 1000;
+		pwm_update();
 		udelay(5000);
-		channel_pwm[1] = 100;
-		update_pwm();
+		pwm[1] = 100;
+		pwm_update();
+		sleep(1);
+		pwm[2] = 1000;
+		pwm[3] = 0;
+		pwm_update();
+		udelay(5000);
+		pwm[2] = 100;
+		pwm_update();
+		sleep(1);
+		pwm[2] = 0;
+		pwm[3] = 1000;
+		pwm_update();
+		udelay(5000);
+		pwm[3] = 100;
+		pwm_update();
 		sleep(1);
 	}
 
 	return 0;
-}
+} */
