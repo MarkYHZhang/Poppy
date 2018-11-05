@@ -25,4 +25,4 @@ control: control.c pi-blaster/pi-blaster.o pi-blaster/mailbox.o imu/imu.o imu/ve
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
-	rm -f imu/*.o pi-blaster/*.o monitor/*.o
+	rm -f imu/*.o pi-blaster/*.o monitor/*.o control imu/calib_gen imu/matmul
