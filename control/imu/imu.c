@@ -1,12 +1,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdint.h>
-#include <time.h>
 #include <math.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include <linux/spi/spidev.h>
-#include <sys/timerfd.h>
 #include <sys/stat.h>
 #include <string.h>
 #include <stdio.h>
@@ -15,18 +13,18 @@
 #include "imu.h"
 #include "../monitor/monitor.h"
 
-//#define USE_I2C
-
 #define I2C_DEV "/dev/i2c-1"
-#define SPI_DEV "/dev/spidev0.1"
 #define AG_ADDR 0x68
 #define MA_ADDR 0x0C
 
 #define STRIFY(x) #x
 #define STR(x) STRIFY(x)
 
+// g / lsb
 double acc_lsb[4] = {   2.0 / 32768.0,    4.0 / 32768.0,    8.0 / 32768.0,   16.0 / 32768.0};
+// degrees / lsb
 double gyr_lsb[4] = { 250.0 / 32768.0,  500.0 / 32768.0, 1000.0 / 32768.0, 2000.0 / 32768.0};
+// mT / lsb
 double mag_lsb[1] = {0.15 * 1e-3};
 
 uint8_t acc_sens = 0;
@@ -43,6 +41,23 @@ struct calib_data {
 };
 
 struct calib_data calib_off = {MAT4_IDENTITY, MAT4_IDENTITY, MAT4_IDENTITY};
+	
+uint8_t data[64];
+
+double agvals[7];
+double mavals[3];
+
+int agfd;
+int mafd;
+
+double imu_acc_weight = 0.001;
+double imu_mag_weight = 0.001;
+
+double imu_temp;
+struct vec3 imu_acc;
+struct vec3 imu_gyr;
+struct vec3 imu_mag;
+struct vec4 imu_rot = QUAT_IDENTITY;
 
 void write_byte(int fd, uint8_t addr, uint8_t val) {
 	uint8_t wr[2] = {addr, val};
@@ -69,14 +84,14 @@ uint8_t read_byte(int fd, uint8_t addr) {
 	return val;
 }
 
-void set_acc_sens(int fd, uint8_t sens) {
+void imu_set_acc_sens(uint8_t sens) {
 	acc_sens = sens;
-	write_byte(fd, 0x1C /* ACCEL_CONFIG */, acc_sens << 3);
+	write_byte(agfd, 0x1C /* ACCEL_CONFIG */, acc_sens << 3);
 }
 
-void set_gyr_sens(int fd, uint8_t sens) {
+void imu_set_gyr_sens(uint8_t sens) {
 	gyr_sens = sens;
-	write_byte(fd, 0x1B /* GYRO_CONFIG */, gyr_sens << 3);
+	write_byte(agfd, 0x1B /* GYRO_CONFIG */, gyr_sens << 3);
 }
 
 void debug_vec4(struct vec4 v) {
@@ -97,7 +112,7 @@ int imu_load_calib(char *filename) {
 
 	int tr = 0;
 	int r;
-	while((r = read(fd, &calib_off + tr, sizeof(calib_off) - tr)) > 0)
+	while((r = read(fd, &calib_off + tr, sizeof(struct calib_data) - tr)) > 0)
 		tr += r;
 	if(r < 0)
 		return -1;
@@ -125,33 +140,30 @@ int imu_save_calib(char *filename) {
 
 	int tr = 0;
 	int r;
-	while((r = write(fd, &calib_off + tr, sizeof(calib_off) - tr)) > 0)
+	while((r = write(fd, &calib_off + tr, sizeof(struct calib_data) - tr)) > 0)
 		tr += r;
 	if(r < 0)
 		return -1;
 	close(fd);
 	return 0;
 }
-	
-uint8_t data[64];
 
-double agvals[7];
-double mavals[3];
+void monitor_mat4(const char *str, struct mat4 m) {
+	monitor_msg("%s %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", str, m.x.x, m.x.y, m.x.z, m.x.w, m.y.x, m.y.y, m.y.z, m.y.w, m.z.x, m.z.y, m.z.z, m.z.w, m.w.x, m.w.y, m.w.z, m.w.w);
+}
 
-int agfd;
-int mafd;
+void imu_monitor_get_calib() {
+	monitor_mat4("imu calib a", calib_off.acc_calib);
+	monitor_mat4("imu calib g", calib_off.gyr_calib);
+	monitor_mat4("imu calib m", calib_off.mag_calib);
+}
 
-struct timespec currentTime;
-struct timespec lastTime;
-
-double acc_weight = 0.001;
-double mag_weight = 0.001;
-
-double imu_temp;
-struct vec3 imu_acc;
-struct vec3 imu_gyr;
-struct vec3 imu_mag;
-struct vec4 imu_rot = {0, 0, 0, 1};
+void imu_monitor_set_calib(uint32_t len, uint8_t *data) {
+	if(len != sizeof(struct calib_data)) {
+		fprintf(stderr, "error, received calibration data has incorrect size");
+	}
+	calib_off = *(struct calib_data *) data;
+}
 
 void imu_init() {
 
@@ -188,8 +200,8 @@ void imu_init() {
 	write_byte(agfd, 0x1B /* GYRO_CONFIG */, 0x00);
 	write_byte(agfd, 0x1B /* GYRO_CONFIG */, 0x00);
 
-	set_acc_sens(agfd, 3);
-	set_gyr_sens(agfd, 3);
+	imu_set_acc_sens(3);
+	imu_set_gyr_sens(3);
 
 //	Open magnetometer
 	if((mafd = open(I2C_DEV, O_RDWR)) < 0) {
@@ -206,16 +218,9 @@ void imu_init() {
 //	Init magnetometer
 	write_byte(mafd, 0x0A /* AK_8963_CNTL */, 0x16);
 	usleep(100000);
-
-	clock_gettime(CLOCK_MONOTONIC, &currentTime);
 }
 
-void imu_update() {
-
-	if(clock_gettime(CLOCK_MONOTONIC, &currentTime) < 0) {
-		perror("Failed to get time");
-		_exit(-1);
-	}
+void imu_update(double dt) {
 
 	read_bytes(agfd, 0x3B, data, 14);
 	for(int i = 0; i < 7; ++i) {
@@ -236,11 +241,7 @@ void imu_update() {
 	imu_gyr = norm4_h(mul4_mv(calib_off.gyr_calib, (struct vec4) {agvals[4], agvals[5], agvals[6], 1.0 / gyr_lsb[gyr_sens]}));
 	imu_mag = norm4_h(mul4_mv(calib_off.mag_calib, (struct vec4) {mavals[1], mavals[0],-mavals[2], 1.0 / mag_lsb[mag_sens]}));
 
-	double dt = (currentTime.tv_sec - lastTime.tv_sec + (currentTime.tv_nsec - lastTime.tv_nsec) * 0.000000001);
-	lastTime = currentTime;
-
 	// Gyro integration
-
 	double ang = len3(imu_gyr) * dt * TORADIAN;
 	struct vec4 gyq = quat_from_aa(imu_gyr, ang);
 
@@ -248,18 +249,18 @@ void imu_update() {
 
 	// Accelerometer adjustment (complementary filter)
 	struct vec3 grav = quat_rot(imu_rot, imu_acc);
-	double grav_adj_ang = ang3(grav, VEC3_ZP) * acc_weight;
+	double grav_adj_ang = ang3(grav, VEC3_ZP) * imu_acc_weight;
 	struct vec4 grav_adj = quat_from_aa(cross3(grav, VEC3_ZP), grav_adj_ang);
 	imu_rot = quat_prod(grav_adj, imu_rot);
 
 	// Magnetometer adjustment (complementary filter)
 	struct vec3 mag_field = quat_rot(imu_rot, imu_mag);
 	mag_field.z = 0;
-	double mag_adj_ang = ang3(mag_field, VEC3_XP) * mag_weight;
+	double mag_adj_ang = ang3(mag_field, VEC3_XP) * imu_mag_weight;
 	struct vec4 mag_adj = quat_from_aa(cross3(mag_field, VEC3_XP), mag_adj_ang);
 	imu_rot = quat_prod(mag_adj, imu_rot);
 
-	monitor_msg("imu %9.6f %9.6f %9.6f %9.6f   %10.6f %10.6f %10.6f   %12.6f %12.6f %12.6f   %10.6f %10.6f %10.6f   %10.3f   %10.3f\n", imu_rot.w, imu_rot.x, imu_rot.y, imu_rot.z, imu_acc.x, imu_acc.y, imu_acc.z, imu_gyr.x, imu_gyr.y, imu_gyr.z, imu_mag.x, imu_mag.y, imu_mag.z, imu_temp, 1.0 / dt);
+	monitor_msg("imu dat %9.6f %9.6f %9.6f %9.6f   %10.6f %10.6f %10.6f   %12.6f %12.6f %12.6f   %10.6f %10.6f %10.6f   %10.3f\n", imu_rot.w, imu_rot.x, imu_rot.y, imu_rot.z, imu_acc.x, imu_acc.y, imu_acc.z, imu_gyr.x, imu_gyr.y, imu_gyr.z, imu_mag.x, imu_mag.y, imu_mag.z, imu_temp);
 
 
 }

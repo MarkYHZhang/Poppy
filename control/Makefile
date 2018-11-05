@@ -18,7 +18,10 @@ imu/vec.o: imu/vec.c
 monitor/monitor.o: monitor/monitor.c
 	$(CC) -o $@ $^ -c
 
-control: control.c pi-blaster/pi-blaster.o pi-blaster/mailbox.o imu/imu.o imu/vec.o monitor/monitor.o
+pid/pid.o: pid/pid.c
+	$(CC) -o $@ $^ -c
+
+control: control.c pi-blaster/pi-blaster.o pi-blaster/mailbox.o imu/imu.o imu/vec.o monitor/monitor.o pid/pid.o
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
