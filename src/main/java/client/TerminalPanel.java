@@ -24,15 +24,37 @@ public class TerminalPanel extends JPanel {
         JTextField input = new JTextField();
         input.addKeyListener(new KeyListener() {
             @Override
-            public void keyTyped(KeyEvent e) {
-
-            }
+            public void keyTyped(KeyEvent e) {}
 
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode()==KeyEvent.VK_ENTER) {
                     if (!input.getText().trim().equals("")) {
-                        terminalDisplay.append("you@Poppy: " + input.getText() + "\n");
+                        String textIn = input.getText();
+                        terminalDisplay.append("you@Poppy: " + textIn + "\n");
+
+
+                        /**
+                         *        forward()
+                         *         backward()
+                         *         turnLeft()
+                         *         turnRight()
+                         *
+                         *         turn turn(angle from 0 to 360 with north being 0, and west being 90)
+                         *         move move(1 forward or -1 backwards, dist in rev)
+                         *         assistant activateAssistant()
+                         *         person moveToPerson() call python to move to person
+                         *         say say(words here) //call microsoft API then send the download URL link of the wav sound
+                         *
+                         *         setStepDist(in revolutions)
+                         *
+                         *         loop(5,forward()+)
+                         */
+
+                        if(textIn.equals("help")){
+
+                        }
+
                         input.setText("");
                     }
                 }

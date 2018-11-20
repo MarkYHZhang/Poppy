@@ -25,7 +25,6 @@ public class RobotSocket {
         }catch (IOException e){
             e.printStackTrace();
         }
-//        initPacket();
     }
 
     @OnWebSocketClose

@@ -31,7 +31,8 @@ public class ControlPanel extends JPanel {
             try {
                 client.start();
 
-                URI echoUri = new URI(Poppy.SERVER_SOCKET_URL);
+//                URI echoUri = new URI(Poppy.SERVER_SOCKET_URL);
+                URI echoUri = new URI("ws://localhost:22430/socket");
                 ClientUpgradeRequest request = new ClientUpgradeRequest();
                 client.connect(socket,echoUri,request);
                 System.out.println("Connecting...");

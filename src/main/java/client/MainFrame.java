@@ -17,9 +17,9 @@ public class MainFrame extends JFrame {
 
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        TerminalPanel panel1 = new TerminalPanel();
-        tabbedPane.addTab("Terminal", null, panel1,
-                "Interact with main.Poppy using commands");
+//        TerminalPanel panel1 = new TerminalPanel();
+//        tabbedPane.addTab("Terminal", null, panel1,
+//                "Interact with main.Poppy using commands");
 
         CodePanel panel2 = new CodePanel();
         tabbedPane.addTab("Code", null, panel2,

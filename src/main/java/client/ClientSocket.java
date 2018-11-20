@@ -21,11 +21,13 @@ public class ClientSocket {
     public void onClose(Session user, int statusCode, String reason) {}
 
     @OnWebSocketMessage
-    public void onMessage(Session user, String message) {}
+    public void onMessage(Session user, String message) {
+        System.out.println(message);
+    }
 
     void moveForwards(){
         try {
-            server.getRemote().sendString("cmd moveForwards");
+            server.getRemote().sendString("{ \"type\": \"load\", \"query\": \"ten\", \"docid\": \"ece106\" }");
         } catch (IOException e) {
             e.printStackTrace();
         }

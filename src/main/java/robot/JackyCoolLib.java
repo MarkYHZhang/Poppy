@@ -4,6 +4,8 @@ public class JackyCoolLib {
 
 //    public static native void move(double vec);
 //    public static native void turn(double degree);
+//    public static native void turnRight();
+//    public static native void turnLeft();
 
 
     public static void move(double vec){
