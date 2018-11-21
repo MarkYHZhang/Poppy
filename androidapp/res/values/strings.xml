@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">PoppyAndroid</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="poppy">Poppy</string>
+    <string name="right">RIGHT</string>
+    <string name="backward">BACKWARD</string>
+    <string name="forward">FORWARD</string>
+    <string name="left">LEFT</string>
+    <string name="text_control">Control: No Action</string>
+    <string name="text_status">Status: Disconnected</string>
+    <!--<style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar" />-->
+
+</resources>
