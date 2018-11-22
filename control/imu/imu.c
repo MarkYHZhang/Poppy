@@ -11,6 +11,7 @@
 
 #include "vec.h"
 #include "imu.h"
+#include "MadgwickAHRS.h"
 #include "../monitor/monitor.h"
 
 #define I2C_DEV "/dev/i2c-1"
@@ -220,7 +221,7 @@ void imu_init() {
 	usleep(100000);
 }
 
-void imu_update(double dt) {
+void imu_update(double dt, uint32_t calib_iteration) {
 
 	read_bytes(agfd, 0x3B, data, 14);
 	for(int i = 0; i < 7; ++i) {
@@ -241,26 +242,34 @@ void imu_update(double dt) {
 	imu_gyr = norm4_h(mul4_mv(calib_off.gyr_calib, (struct vec4) {agvals[4], agvals[5], agvals[6], 1.0 / gyr_lsb[gyr_sens]}));
 	imu_mag = norm4_h(mul4_mv(calib_off.mag_calib, (struct vec4) {mavals[1], mavals[0],-mavals[2], 1.0 / mag_lsb[mag_sens]}));
 
-	// Gyro integration
-	double ang = len3(imu_gyr) * dt * TORADIAN;
-	struct vec4 gyq = quat_from_aa(imu_gyr, ang);
 
-	imu_rot = quat_prod(imu_rot, gyq);
 
-	// Accelerometer adjustment (complementary filter)
-	struct vec3 grav = quat_rot(imu_rot, imu_acc);
-	double grav_adj_ang = ang3(grav, VEC3_ZP) * imu_acc_weight;
-	struct vec4 grav_adj = quat_from_aa(cross3(grav, VEC3_ZP), grav_adj_ang);
-	imu_rot = quat_prod(grav_adj, imu_rot);
+	if(calib_iteration == 0) {
+		MadgwickAHRSupdate(imu_gyr.x / 180 * M_PI, imu_gyr.y / 180 * M_PI, imu_gyr.z / 180 * M_PI, imu_acc.x, imu_acc.y, imu_acc.z, imu_mag.x, imu_mag.y, imu_mag.z);
 
-	// Magnetometer adjustment (complementary filter)
-	struct vec3 mag_field = quat_rot(imu_rot, imu_mag);
-	mag_field.z = 0;
-	double mag_adj_ang = ang3(mag_field, VEC3_XP) * imu_mag_weight;
-	struct vec4 mag_adj = quat_from_aa(cross3(mag_field, VEC3_XP), mag_adj_ang);
-	imu_rot = quat_prod(mag_adj, imu_rot);
+		imu_rot = (struct vec4) {q1, q2, q3, q0};
 
-	monitor_msg("imu dat %9.6f %9.6f %9.6f %9.6f   %10.6f %10.6f %10.6f   %12.6f %12.6f %12.6f   %10.6f %10.6f %10.6f   %10.3f\n", imu_rot.w, imu_rot.x, imu_rot.y, imu_rot.z, imu_acc.x, imu_acc.y, imu_acc.z, imu_gyr.x, imu_gyr.y, imu_gyr.z, imu_mag.x, imu_mag.y, imu_mag.z, imu_temp);
+		monitor_msg("imu dat %9.6f %9.6f %9.6f %9.6f   %10.6f %10.6f %10.6f   %12.6f %12.6f %12.6f   %10.6f %10.6f %10.6f   %10.3f\n", imu_rot.w, imu_rot.x, imu_rot.y, imu_rot.z, imu_acc.x, imu_acc.y, imu_acc.z, imu_gyr.x, imu_gyr.y, imu_gyr.z, imu_mag.x, imu_mag.y, imu_mag.z, imu_temp);
+	} else {
+		for(uint32_t i = 0; i < calib_iteration; ++i) {
+			// Accelerometer adjustment (complementary filter)
+			struct vec3 grav = quat_rot(imu_rot, imu_acc);
+			double grav_adj_ang = ang3(grav, VEC3_ZP) * imu_acc_weight;
+			struct vec4 grav_adj = quat_from_aa(cross3(grav, VEC3_ZP), grav_adj_ang);
+			imu_rot = quat_prod(grav_adj, imu_rot);
+
+			// Magnetometer adjustment (complementary filter)
+			struct vec3 mag_field = quat_rot(imu_rot, imu_mag);
+			mag_field.z = 0;
+			double mag_adj_ang = ang3(mag_field, VEC3_XP) * imu_mag_weight;
+			struct vec4 mag_adj = quat_from_aa(cross3(mag_field, VEC3_XP), mag_adj_ang);
+			imu_rot = quat_prod(mag_adj, imu_rot);
+		}
+		q0 = imu_rot.w;
+		q1 = imu_rot.x;
+		q2 = imu_rot.y;
+		q3 = imu_rot.z;
+	}
 
 
 }
