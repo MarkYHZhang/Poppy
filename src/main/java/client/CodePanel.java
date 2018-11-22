@@ -86,10 +86,6 @@ public class CodePanel extends JPanel{
                         codeArea.append("ight()");
                         robot.keyPress(10);
                         robot.keyRelease(10);
-                    }else if (e.getKeyChar()=='s'){
-                        codeArea.append("ay()");
-                        robot.keyPress(37);
-                        robot.keyRelease(37);
                     }else if (e.getKeyChar()=='i'){
                         codeArea.append("ter(,)");
                         robot.keyPress(37);
@@ -107,7 +103,7 @@ public class CodePanel extends JPanel{
 
         executeButton.addActionListener(e -> {
             try {
-                Unirest.post(Poppy.SERVER_UPDATE_CODE_URL).body(readCode().replace("loop","iter").replace("turnLeft","left").replace("turnRight","right")).asString();
+                Unirest.post(Poppy.SERVER_UPDATE_CODE_URL).body(readCode().replace("\n","").replace("loop","iter").replace("turnLeft","left").replace("turnRight","right")).asString();
             } catch (UnirestException ex) {
                 ex.printStackTrace();
             }
@@ -164,8 +160,6 @@ public class CodePanel extends JPanel{
                         "   turn left 90 degrees \n\n" +
                         "right(): \n" +
                         "   turn right 90 degrees \n\n" +
-                        "say(some words): \n" +
-                        "   make Poppy speak some words \n\n" +
                         "iter(numIter,X1()+X2()+...+Xn())\n" +
                         "   loop methods X1()+X2()+...+Xn()\n" +
                         "   in order for numIter time"
@@ -189,6 +183,7 @@ public class CodePanel extends JPanel{
                     String s = sc.nextLine().trim();
                     s = s.substring(0,s.length()-1);
                     sb.append(s);
+                    sb.append("\n");
                 }
                 codeArea.setText(sb.toString());
             } catch (FileNotFoundException e) {
@@ -208,6 +203,7 @@ public class CodePanel extends JPanel{
         while (sc.hasNext()){
             sb.append(sc.nextLine().trim());
             sb.append(";");
+            sb.append("\n");
         }
         return sb.toString();
     }
