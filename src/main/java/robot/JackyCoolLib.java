@@ -1,6 +1,7 @@
 package robot;
 
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -8,11 +9,14 @@ public class JackyCoolLib {
 
     private static boolean enablePipe = true;
 
-    private static BufferedWriter bw;
+//    private static BufferedWriter bw;
+
+    private static FileOutputStream fos;
     static {
         if (enablePipe) {
             try {
-                bw = new BufferedWriter(new FileWriter("/tmp/poppypipe"));
+                fos = new FileOutputStream("/tmp/poppypipe");
+//                bw = new BufferedWriter(new FileWriter("/tmp/poppypipe"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -29,8 +33,8 @@ public class JackyCoolLib {
     public static void sendpipe(String s){
         if (enablePipe) {
             try {
-                bw.write(s+"\n");
-                bw.flush();
+                fos.write((s+"\n").getBytes());
+                fos.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
