@@ -27,7 +27,7 @@ public class ClientSocket {
 
     void moveForwards(){
         try {
-            server.getRemote().sendString("{ \"type\": \"load\", \"query\": \"ten\", \"docid\": \"ece106\" }");
+            server.getRemote().sendString("cmd moveForwards");
         } catch (IOException e) {
             e.printStackTrace();
         }

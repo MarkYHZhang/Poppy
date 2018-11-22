@@ -46,7 +46,8 @@ public class ConnectionListener extends WebSocketListener{
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
         connected = false;
         tv.setText("Status: Disconnected");
-        snackbar.setText("Server connection lost!").show();
+        t.printStackTrace();
+ //        snackbar.setText("Server connection lost!").show();
 
     }
 

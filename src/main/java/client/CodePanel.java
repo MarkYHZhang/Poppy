@@ -68,7 +68,6 @@ public class CodePanel extends JPanel{
                     int t=pre;
                     pre=e.getKeyCode();
                     if(t!=10&&codeArea.getText().length()!=1){
-                        System.out.println("wtf");
                         return;
                     }
                     if (e.getKeyChar()=='f'){

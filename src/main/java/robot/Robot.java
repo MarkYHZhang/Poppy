@@ -52,7 +52,7 @@ public class Robot {
 
     void executeCode(){
         try {
-            System.out.println(Unirest.get("http://0.0.0.0:9001/getCode").asString().getBody());
+            System.out.println(Unirest.get(Poppy.SERVER_GET_CODE_URL).asString().getBody());
         } catch (UnirestException e) {
             e.printStackTrace();
         }

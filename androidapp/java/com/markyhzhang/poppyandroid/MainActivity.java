@@ -13,7 +13,7 @@ import okhttp3.WebSocket;
 public class MainActivity extends AppCompatActivity {
 
     private OkHttpClient client;
-    private Request request = new Request.Builder().url("ws://10.0.2.2:9001/socket").build();
+    private Request request = new Request.Builder().url("ws://40.117.127.142:9001/socket").build();
     private ConnectionListener connection;
     private WebSocket ws;
     private TextView tv;
@@ -24,16 +24,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         tv = findViewById(R.id.text_status);
-        connection = new ConnectionListener(tv, snackbar);
         client = new OkHttpClient();
         snackbar = Snackbar.make(findViewById(R.id.main_layout), "",
                 Snackbar.LENGTH_SHORT);
+        connection = new ConnectionListener(tv, snackbar);
     }
 
     public void performAction(View view){
         String t = ((TextView)view).getText().toString();
+        System.out.println(t);
         if (t.equals(getResources().getString(R.string.connect))) {
             ws = client.newWebSocket(request, connection);
+            System.out.println("FUCK");
             tv.setText("Status: Connecting...");
         } else if (t.equals(getResources().getString(R.string.disconnect))) {
             ws.close(1000, "bye");

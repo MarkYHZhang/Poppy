@@ -21,7 +21,7 @@ public class Poppy {
 
     static String code;
 
-    public static final String SERVER_IP = "0.0.0.0";
+    public static String SERVER_IP = "40.117.127.142";
     public static final short SERVER_PORT = 9001;
     public static final String SERVER_UPDATE_CODE_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/updateCode";
     public static final String SERVER_GET_CODE_URL = "http://"+SERVER_IP+":"+SERVER_PORT+"/getCode";
