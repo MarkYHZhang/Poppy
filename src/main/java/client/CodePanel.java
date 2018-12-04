@@ -3,6 +3,7 @@ package client;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import main.Poppy;
+import robot.JackyCoolLib;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -28,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Scanner;
 
 public class CodePanel extends JPanel{
@@ -103,6 +105,8 @@ public class CodePanel extends JPanel{
 
         executeButton.addActionListener(e -> {
             try {
+//                executeCode();
+//                executeCode(compileCode((readCode().replace("\n","").replace("loop","iter").replace("turnLeft","left").replace("turnRight","right"))));
                 Unirest.post(Poppy.SERVER_UPDATE_CODE_URL).body(readCode().replace("\n","").replace("loop","iter").replace("turnLeft","left").replace("turnRight","right")).asString();
             } catch (UnirestException ex) {
                 ex.printStackTrace();
@@ -193,8 +197,6 @@ public class CodePanel extends JPanel{
 
         add(rightPane, BorderLayout.LINE_END);
 
-
-
     }
 
     private String readCode(){
@@ -207,4 +209,88 @@ public class CodePanel extends JPanel{
         }
         return sb.toString();
     }
+
+//
+//    void executeCode(String code){
+//        new Thread(() -> {
+//            try {
+//                String[] cmds = code.split("\\|");
+//                ArrayDeque<String> d = new ArrayDeque<String>();
+//                for (String cmd : cmds) {
+//                    if (cmd.equals("move,1")){
+//                        for (int i = 0; i < 8; i++)
+//                            d.add("move,0.2");
+//                    }else if(cmd.equals("move,-1")){
+//                        for (int i = 0; i < 8; i++)
+//                            d.add("move,-0.2");
+//                    }else {
+//                        d.add(cmd);
+//                    }
+//                }
+//                for (String raw : d) {
+//                    String[] args = raw.split(",");
+//                    String cmd = args[0];
+//                    double val = Double.parseDouble(args[1]);
+//                    if (cmd.equals("move")){
+//                        JackyCoolLib.move(val);
+//                    }else if (cmd.equals("turn")){
+//                        JackyCoolLib.turn(val);
+//                    }
+//                    if (cmd.equals("move")) Thread.sleep(200);
+//                    else Thread.sleep(3000);
+//                }
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }).start();
+//    }
+//
+//    private static String compileCode(String code){
+//        StringBuffer sb = new StringBuffer();
+//        String[] rawCode = code.split(";");
+//        for (String line : rawCode) {
+//            line = line.trim();
+//            if (line.equals("left()")) line="turn(40)";
+//            else if (line.startsWith("right()")) line="turn(-40)";
+//            else if (line.startsWith("forward()")) line="move(1)";
+//            else if (line.startsWith("backward()")) line="move(-1)";
+//
+//            System.out.println(line);
+//
+//            if(line.startsWith("move(")){
+//                try {
+//                    int direction = Integer.parseInt(line.substring(5, line.length()-1).trim());
+//                    sb.append("move,"+(direction*1));
+//                }catch (NumberFormatException nfe){
+//                    nfe.printStackTrace();
+//                }
+//            }else if(line.startsWith("turn(")){
+//                System.out.println("good");
+//                try {
+//                    int degree = Integer.parseInt(line.substring(5, line.length()-1).trim());
+//                    sb.append("turn,"+degree);
+//                }catch (NumberFormatException nfe){
+//                    nfe.printStackTrace();
+//                }
+//            }else if(line.startsWith("iter(")){
+//                try{
+//                    String[] args = line.substring(5,line.length()-1).trim().split(",");
+//                    int iterations = Integer.parseInt(args[0]);
+//                    String instruction = compileCode(args[1].replace("+",";").trim());
+//                    StringBuffer looped = new StringBuffer(instruction);
+//                    for (int i = 1; i < iterations; i++) {
+//                        looped.append(instruction);
+//                    }
+//                    sb.append(looped.substring(0,looped.length()-1));
+//                }catch (NumberFormatException nfe){
+//                    nfe.printStackTrace();
+//                }
+//            }
+//            System.out.println();
+//            sb.append("|");
+//        }
+//        return sb.toString();
+//    }
+
+
 }

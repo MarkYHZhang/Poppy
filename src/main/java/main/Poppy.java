@@ -6,9 +6,6 @@ import server.ClientHandler;
 import spark.Spark;
 
 import javax.swing.UIManager;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Collections;
 
 import static spark.Spark.get;
 import static spark.Spark.init;
@@ -78,9 +75,6 @@ public class Poppy {
 
         turn turn(angle from 0 to 360 with north being 0, and west being 90)
         move move(1 forward or -1 backwards, dist in rev)
-        assistant activateAssistant()
-        person moveToPerson() call python to move to person
-        say say(words here) //call microsoft API then send the download URL link of the wav sound
 
         setStepDist(in revolutions)
 
@@ -92,42 +86,29 @@ public class Poppy {
         String[] rawCode = code.split(";");
         for (String line : rawCode) {
             line = line.trim();
-            if (line.equals("turnLeft()")) line="turn(90)";
-            else if (line.startsWith("turnRight()")) line="turn(270)";
+            if (line.equals("left()")) line="turn(90)";
+            else if (line.startsWith("right()")) line="turn(-90)";
             else if (line.startsWith("forward()")) line="move(1)";
             else if (line.startsWith("backward()")) line="move(-1)";
 
-            if (line.startsWith("setStepDist(")){
-                try {
-                    rev = Integer.parseInt(line.substring(12, line.length()-1).trim());
-                    continue;
-                }catch (NumberFormatException nfe){
-                    nfe.printStackTrace();
-                }
-            }else if(line.startsWith("move(")){
+            System.out.println(line);
+
+            if(line.startsWith("move(")){
                 try {
                     int direction = Integer.parseInt(line.substring(5, line.length()-1).trim());
-                    sb.append("move,"+(direction*rev));
+                    sb.append("move,"+(direction*1));
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }
             }else if(line.startsWith("turn(")){
+                System.out.println("good");
                 try {
                     int degree = Integer.parseInt(line.substring(5, line.length()-1).trim());
                     sb.append("turn,"+degree);
                 }catch (NumberFormatException nfe){
                     nfe.printStackTrace();
                 }
-            }else if(line.startsWith("activateAssistant()")) sb.append("assistant");
-            else if(line.startsWith("moveToPerson()")) sb.append("person");
-            else if(line.startsWith("say(")){
-                try {
-                    String words = line.substring(4, line.length()-1);
-                    sb.append("say,"+words);
-                }catch (NumberFormatException nfe){
-                    nfe.printStackTrace();
-                }
-            }else if(line.startsWith("loop(")){
+            }else if(line.startsWith("iter(")){
                 try{
                     String[] args = line.substring(5,line.length()-1).trim().split(",");
                     int iterations = Integer.parseInt(args[0]);
@@ -141,6 +122,7 @@ public class Poppy {
                     nfe.printStackTrace();
                 }
             }
+            System.out.println();
             sb.append("|");
         }
         return sb.toString();

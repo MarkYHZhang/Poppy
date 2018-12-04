@@ -40,6 +40,8 @@ public class ClientHandler {
                     robot.getRemote().sendString("move,"+revDist);
                 else if (cmd.equals("moveBackwards"))
                     robot.getRemote().sendString("move,"+revDist*-1);
+                else if (cmd.equals("move"))
+                    robot.getRemote().sendString("move,"+message.split(" ")[2]);
                 else if(cmd.equals("turn"))
                     robot.getRemote().sendString("turn,"+message.split(" ")[2]);
             } catch (IOException e) {

@@ -12,6 +12,8 @@ import java.io.IOException;
 public class ClientSocket {
     private Session server;
 
+    private boolean up, down, left, right;
+
     @OnWebSocketConnect
     public void onConnect(Session user) throws Exception {
         server = user;
@@ -23,6 +25,22 @@ public class ClientSocket {
     @OnWebSocketMessage
     public void onMessage(Session user, String message) {
         System.out.println(message);
+    }
+
+    public void setUp(boolean up) {
+        this.up = up;
+    }
+
+    public void setDown(boolean down) {
+        this.down = down;
+    }
+
+    public void setLeft(boolean left) {
+        this.left = left;
+    }
+
+    public void setRight(boolean right) {
+        this.right = right;
     }
 
     void moveForwards(){
@@ -49,4 +67,19 @@ public class ClientSocket {
         }
     }
 
+    public boolean isUp() {
+        return up;
+    }
+
+    public boolean isDown() {
+        return down;
+    }
+
+    public boolean isLeft() {
+        return left;
+    }
+
+    public boolean isRight() {
+        return right;
+    }
 }

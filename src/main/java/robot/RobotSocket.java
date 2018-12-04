@@ -1,12 +1,16 @@
 package robot;
 
+import main.Poppy;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.IOException;
+import java.net.URI;
 
 @WebSocket
 public class RobotSocket {
@@ -28,7 +32,22 @@ public class RobotSocket {
     }
 
     @OnWebSocketClose
-    public void onClose(Session user, int statusCode, String reason) {}
+    public void onClose(Session user, int statusCode, String reason) {
+        WebSocketClient client = new WebSocketClient();
+
+        RobotSocket socket = new RobotSocket(instance);
+        try {
+            client.start();
+
+            URI echoUri = new URI(Poppy.SERVER_SOCKET_URL);
+            ClientUpgradeRequest request = new ClientUpgradeRequest();
+            client.connect(socket,echoUri,request);
+            System.out.println("Reconnecting...");
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
 
 
     /*
