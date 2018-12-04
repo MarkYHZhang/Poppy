@@ -21,6 +21,6 @@ void imu_set_acc_sens(uint8_t sens);
 void imu_set_gyr_sens(uint8_t sens);
 
 void imu_init();
-void imu_update(double dt);
+void imu_update(double dt, uint32_t calib_iteration);
 
 #endif

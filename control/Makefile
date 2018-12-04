@@ -15,14 +15,17 @@ imu/imu.o: imu/imu.c
 imu/vec.o: imu/vec.c
 	$(CC) -o $@ $^ -c
 
+imu/madgwick.o: imu/MadgwickAHRS.c
+	$(CC) -o $@ $^ -c
+
 monitor/monitor.o: monitor/monitor.c
 	$(CC) -o $@ $^ -c
 
 pid/pid.o: pid/pid.c
 	$(CC) -o $@ $^ -c
 
-control: control.c pi-blaster/pi-blaster.o pi-blaster/mailbox.o imu/imu.o imu/vec.o monitor/monitor.o pid/pid.o
+control: control.c pi-blaster/pi-blaster.o pi-blaster/mailbox.o imu/imu.o imu/vec.o monitor/monitor.o pid/pid.o imu/madgwick.o
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
-	rm -f imu/*.o pi-blaster/*.o monitor/*.o control imu/calib_gen imu/matmul
+	rm -f imu/*.o pi-blaster/*.o monitor/*.o
