@@ -28,7 +28,7 @@ Poppy is an interactive, educational, and intelligent robot that is able to comm
 * Ultrasonic Proximity Sensor
 * Skeletal structure
 
-## Video DEMO (COMING SOON!)
+## Video DEMO
 [![Poppy Video Demonstration](https://img.youtube.com/vi/w4yrwwst9eY/0.jpg)](https://www.youtube.com/embed/w4yrwwst9eY)
 
 ## TODOS:
