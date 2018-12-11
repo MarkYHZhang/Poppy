@@ -29,6 +29,7 @@ Poppy is an interactive, educational, and intelligent robot that is able to comm
 * Skeletal structure
 
 ## Video DEMO (COMING SOON!)
+[![Poppy Video Demonstration](https://img.youtube.com/vi/w4yrwwst9eY/0.jpg)](https://www.youtube.com/embed/w4yrwwst9eY)
 
 ## TODOS:
 1. Spacial awareness using proximity sensor to detect obstacles and surface edges (Currently using OpenCV for entry level spacial awareness)
